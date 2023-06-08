@@ -51,7 +51,7 @@ if uploaded_file is not None:
             b64 = base64.b64encode(file.read()).decode()  # Encode the file content in base64
             href = f'<a href="data:text/html;base64,{b64}" download="profiling_report.html">Download The Report</a>'
             st.markdown(href, unsafe_allow_html=True)
-            st.write(":arrow_up: Click Above To Download The Report, Thank You!", icon="✅")
+            st.write(":arrow_up: Click Above To Download The Report, Thank You!:pray:", icon="✅")
             
         # Increment the download count
         download_count += 1
