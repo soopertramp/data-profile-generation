@@ -10,8 +10,11 @@ st.set_page_config(page_title='Data Analysis App', layout='wide')
 st.title('Data Analysis App :chart_with_upwards_trend:')
 
 # Initialize download count
-if 'download_count' not in st.session_state:
-    st.session_state['download_count'] = 0
+@st.cache_data(ttl=None)
+def init_download_count():
+    return 0
+
+download_count = init_download_count()
 
 # Add a title and description
 st.write('## Upload a CSV file to generate a data profiling report.')
@@ -51,7 +54,7 @@ if uploaded_file is not None:
             st.write(":arrow_up: Click Above To Download The Report, Thank You!", icon="✅")
             
         # Increment the download count
-            st.session_state['download_count'] += 1
+        download_count += 1
 
 # Display the download count
-st.write(f"Download Count: {st.session_state['download_count']}")
+st.write(f"Download Count: {download_count}")
