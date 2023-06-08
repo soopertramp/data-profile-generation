@@ -42,7 +42,7 @@ if uploaded_file is not None:
     export_button = st.button('Export Report as HTML')
 
     if export_button:
-        profile.to_file("profiling_report.html")
+        profile.to_file("profiling_report.html", silent = False)
         st.success("Report exported successfully as HTML!")
 
         # Update the download counter
