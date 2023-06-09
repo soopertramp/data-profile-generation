@@ -70,4 +70,4 @@ if uploaded_file is not None:
             st.write(":arrow_up: Click Above To Download The Report, Thank You!:pray:", icon="✅")
 
 # Display the download count
-st.write(f"Download Count: {download_count}")
+st.write(f"Downloaders Count: {download_count}")
