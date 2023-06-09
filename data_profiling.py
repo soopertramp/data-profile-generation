@@ -5,8 +5,6 @@ from streamlit_pandas_profiling import st_profile_report
 import streamlit_analytics
 import base64
 
-streamlit_analytics.start_tracking()
-
 # Set page title and layout
 st.set_page_config(page_title='Data Analysis App', layout='wide')
 
@@ -34,7 +32,10 @@ if uploaded_file is not None:
 
     # Add interactivity to the report
     st.write('## Do you need to generate the report?')
+    
+    streamlit_analytics.start_tracking()
     submit_button = st.button('Yes')
+    streamlit_analytics.stop_tracking()
     
     if submit_button:
         # Display the profiling report using streamlit_pandas_profiling
@@ -61,5 +62,3 @@ if uploaded_file is not None:
 
 # Display the download count
 st.write(f"Download Count: {download_count}")
-
-streamlit_analytics.stop_tracking()
