@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from ydata_profiling import ProfileReport
 from streamlit_pandas_profiling import st_profile_report
-import streamlit_analytics
 import base64
 
 # Set page title and layout
@@ -32,10 +31,8 @@ if uploaded_file is not None:
 
     # Add interactivity to the report
     st.write('## Do you need to generate the report?')
-    
-    streamlit_analytics.start_tracking()
+
     submit_button = st.button('Yes')
-    streamlit_analytics.stop_tracking()
     
     if submit_button:
         # Display the profiling report using streamlit_pandas_profiling
