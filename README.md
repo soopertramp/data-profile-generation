@@ -4,31 +4,33 @@ The Data Analysis App is a web application that allows users to upload a CSV fil
 
 ## Features
 
-- **Upload a CSV file**: Users can upload a CSV file containing their data to the app. The file uploader widget allows for easy selection and upload of the file.
+- ```Upload a CSV file```: Users can upload a CSV file containing their data to the app. The file uploader widget allows for easy selection and upload of the file.
 
-- **Generate a Data Profiling Report**: The app generates a data profiling report for the uploaded CSV file using the pandas-profiling library. This report provides comprehensive insights into the data, including summary statistics, data types, missing values, correlations, and more.
+- ```Generate a Data Profiling Report```: The app generates a data profiling report for the uploaded CSV file using the pandas-profiling library. This report provides comprehensive insights into the data, including summary statistics, data types, missing values, correlations, and more.
 
-- **View the Profiling Report**: The generated profiling report is displayed using interactive visualizations and summary tables. Users can explore the report to gain a deeper understanding of their data and identify patterns and anomalies.
+- ```View the Profiling Report```: The generated profiling report is displayed using interactive visualizations and summary tables. Users can explore the report to gain a deeper understanding of their data and identify patterns and anomalies.
 
-- **Export the Profiling Report**: Users have the option to export the generated profiling report as an HTML file. This allows for easy sharing and further analysis of the report outside the app.
+- ```Export the Profiling Report```: Users have the option to export the generated profiling report as an HTML file. This allows for easy sharing and further analysis of the report outside the app.
 
-- **Download the Exported Report**: The app provides a download link for the exported report. Users can click on the link to download the report and access it offline.
+- ```Download the Exported Report```: The app provides a download link for the exported report. Users can click on the link to download the report and access it offline.
 
-- **Track Download Count**: The app tracks the number of times the report has been downloaded. The download count is displayed on the app, providing insights into the popularity and usage of the generated reports.
+- ```Track Download Count```: The app tracks the number of times the report has been downloaded. The download count is displayed on the app, providing insights into the popularity and usage of the generated reports.
 
 ## Requirements
 
 To run the Data Analysis App, you need to have the following requirements installed:
 
-- Python 3.7 or above: The app is built using Python, so you need to have a compatible version installed on your system.
+- ```Python 3.8 or above```: The app is built using Python, so you need to have a compatible version installed on your system.
 
-- Streamlit: Streamlit is used as the web application framework for building the user interface and serving the app.
+- ```Streamlit```: Streamlit is used as the web application framework for building the user interface and serving the app.
 
-- pandas: The pandas library is used for reading and manipulating the uploaded CSV file and generating the data profiling report.
+- ```pandas```: The pandas library is used for reading and manipulating the uploaded CSV file and generating the data profiling report.
 
-- pandas-profiling: This library is used to generate the data profiling report with detailed statistics and visualizations.
+- ```pandas-profiling```: This library is used to generate the data profiling report with detailed statistics and visualizations.
 
-- base64: The base64 library is used to encode the exported report file for download.
+- ```base64```: The base64 library is used to encode the exported report file for download.
+
+- For more check [requirements](https://github.com/soopertramp/data-analysis-app/blob/main/requirements.txt)
 
 ## Installation
 
