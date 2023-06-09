@@ -1,0 +1,4 @@
+[theme]
+base = "light"
+backgroundColor = "#f5f5ee"
+font = "monospace"
