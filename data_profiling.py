@@ -99,7 +99,7 @@ data_analysis_app()
 
 
 
-""" Attempt - 1 """
+# Attempt - 1 
 
 # import streamlit as st
 # import pandas as pd
@@ -175,7 +175,7 @@ data_analysis_app()
 # # Display the download count
 # st.write(f"Downloaders Count: {download_count}")
 
-""" Attempt - 2 """
+# Attempt - 2 
 
 # import streamlit as st
 # import pandas as pd
