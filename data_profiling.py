@@ -3,7 +3,9 @@
 # Importing Necessary Libraries
 import base64
 
+import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 from streamlit_pandas_profiling import st_profile_report
 from ydata_profiling import ProfileReport
 
@@ -67,7 +69,7 @@ def upload_and_generate_report() -> None:
         None.
 
     """
-    st.write('## Upload a CSV or Excel file to generate a data profiling report.')
+    st.subheader('Upload a CSV or Excel file to generate a data profiling report.')
 
     # Create a file uploader widget
     uploaded_file = st.file_uploader("### Upload a file", type=["csv", "xlsx"])
@@ -81,28 +83,213 @@ def upload_and_generate_report() -> None:
         else:
             st.error("Invalid file format. Please upload a CSV or Excel file.")
             return
+        
+        # Ask the user for data cleaning inputs
+        st.subheader('Data Cleaning Inputs')
+
+        # Example: Remove missing values
+        remove_missing_values = st.checkbox('Remove missing values')
+        if remove_missing_values:
+            df = df.dropna()
+
+        # Example: Convert string columns to lowercase
+        lowercase_columns = st.multiselect('Columns to convert to lowercase', df.select_dtypes(include=['object']).columns)
+        for column in lowercase_columns:
+            df[column] = df[column].str.lower()
+
+        # Example: Remove duplicates
+        remove_duplicates = st.checkbox('Remove duplicates')
+        if remove_duplicates:
+            df = df.drop_duplicates()
+
+        # Example: Convert date columns to datetime
+        date_columns = st.multiselect('Columns to convert to datetime', df.select_dtypes(include=['object']).columns)
+        for column in date_columns:
+            df[column] = pd.to_datetime(df[column])
+
+        # Example: Remove outliers
+        remove_outliers = st.checkbox('Remove outliers')
+        if remove_outliers:
+            num_columns = df.select_dtypes(include=['number']).columns
+            for column in num_columns:
+                q1 = df[column].quantile(0.25)
+                q3 = df[column].quantile(0.75)
+                iqr = q3 - q1
+                lower_bound = q1 - 1.5 * iqr
+                upper_bound = q3 + 1.5 * iqr
+                df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
+
+        # Example: Standardize numerical columns
+        standardize_columns = st.multiselect('Numerical columns to standardize', df.select_dtypes(include=['number']).columns)
+        for column in standardize_columns:
+            df[column] = (df[column] - df[column].mean()) / df[column].std()
+
+        # Example: One-hot encode categorical columns
+        categorical_columns = st.multiselect('Categorical columns to one-hot encode', df.select_dtypes(include=['object']).columns)
+        df = pd.get_dummies(df, columns=categorical_columns)
+
+        # Example: Convert boolean columns to binary
+        boolean_columns = st.multiselect('Boolean columns to convert to binary', df.select_dtypes(include=['bool']).columns)
+        for column in boolean_columns:
+            df[column] = df[column].astype(int)
+            
+        logo_string = 'https://github.com/soopertramp/data-analysis-app/blob/main/logo.png'    
 
         # Generate the pandas profiling report
-        profile = ProfileReport(df, title="Profiling Report")
+        profile = ProfileReport(df, 
+                                title="Profiling Report", 
+                                explorative = True, 
+                                dark_mode = True,
+                                dataset={
+                                "description": "This app is created by - Pradeepchandra Reddy S C (a.k.a soopertramp07)",
+                                "copyright_holder": "soopertramp07",
+                                "copyright_year": "2023",
+                                "url": "https://www.linkedin.com/in/pradeepchandra-reddy-s-c/"},
+                                html={"style": {"logo": logo_string}})
+        
+        st.subheader('Basic Investigation Of The Dataset')
+        
+        # Display the entire dataset
+        if st.button('Show Dataset'):
+            st.subheader('Your Dataset')
+            st.write(df)
+
+        # Display the top 5 rows of the dataset
+        if st.button('Show Top 5 Rows'):
+            st.subheader('Top 5 Rows')
+            st.write(df.head(5))
+
+        # Display the bottom 5 rows of the dataset
+        if st.button('Show Bottom 5 Rows'):
+            st.subheader('Bottom 5 Rows')
+            st.write(df.tail(5))
+
+        # Display the shape of the dataset
+        if st.button('Show Shape of the Dataset'):
+            st.subheader('Shape of the dataset')
+            st.write(f'The shape of your dataset is {df.shape[0]} rows and {df.shape[1]} columns')
+
+        # Display the types of columns
+        if st.button('Show Types of Columns'):
+            st.subheader('The types of your columns')
+            st.write(df.dtypes)
+
+        # Display missing values and duplicate values
+        if st.button('Show Missing Values and Duplicate Values'):
+            st.subheader('Missing Values and Duplicate Values In Your Dataset')
+            missing_values = df.isnull().sum()
+            missing_values_formatted = ', '.join(f"{column} - {count}" for column, count in missing_values.items())
+            st.write(f"The DataFrame contains missing values:\n\n{missing_values_formatted}\n")
+            st.write(f'The number of duplicated rows in your dataset is {df.duplicated().sum()}')
+
+        # Display descriptive statistics
+        if st.button('Show Descriptive Statistics'):
+            st.subheader('Descriptive Statistics of Your Dataset')
+            st.write(df.describe())
+        
+        st.set_option('deprecation.showPyplotGlobalUse', False)
+        
+        # Create plots
+        generate_plots = st.button("Do You Want To Generate Plots")
+        if generate_plots:
+            st.subheader('Plots')
+            plot_types = ['scatter', 'line', 'bar', 'histogram', 'box', 'pie']
+
+            # Select plot type
+            selected_plot = st.selectbox('Select plot type', plot_types)
+
+            if selected_plot == 'scatter':
+                st.subheader('Scatter Plot')
+                x_variable = st.selectbox('Select x-axis variable', df.columns)
+                y_variable = st.selectbox('Select y-axis variable', df.columns)
+                plt.figure(figsize = (8,6))
+                plt.scatter(df[x_variable], df[y_variable])
+                plt.xlabel(x_variable)
+                plt.ylabel(y_variable)
+                plt.title('Scatter Plot')
+                plt.tight_layout()
+                plt.xticks(rotation=45)
+                st.pyplot()
+
+            elif selected_plot == 'line':
+                st.subheader('Line Plot')
+                x_variable = st.selectbox('Select x-axis variable', df.columns)
+                y_variable = st.selectbox('Select y-axis variable', df.columns)
+                plt.figure(figsize = (25,15))
+                plt.plot(df[x_variable], df[y_variable])
+                plt.xlabel(x_variable)
+                plt.ylabel(y_variable)
+                plt.title('Line Plot')
+                plt.tight_layout()
+                plt.xticks(rotation=45)
+                st.pyplot()
+
+            elif selected_plot == 'bar':
+                st.subheader('Bar Plot')
+                x_variable = st.selectbox('Select x-axis variable', df.columns)
+                y_variable = st.selectbox('Select y-axis variable', df.columns)
+                plt.figure(figsize = (25,15))
+                plt.bar(df[x_variable], df[y_variable])
+                plt.xlabel(x_variable)
+                plt.ylabel(y_variable)
+                plt.title('Bar Plot')
+                plt.tight_layout()
+                plt.xticks(rotation=45)
+                st.pyplot()
+
+            elif selected_plot == 'histogram':
+                st.subheader('Histogram')
+                x_variable = st.selectbox('Select variable', df.columns)
+                plt.figure(figsize = (25,15))
+                plt.hist(df[x_variable])
+                plt.xlabel(x_variable)
+                plt.ylabel('Frequency')
+                plt.title('Histogram')
+                plt.tight_layout()
+                plt.xticks(rotation=45)
+                st.pyplot()
+
+            elif selected_plot == 'box':
+                st.subheader('Box Plot')
+                x_variable = st.selectbox('Select x-axis variable', df.columns)
+                y_variable = st.selectbox('Select y-axis variable', df.columns)
+                plt.figure(figsize = (25,15))
+                sns.boxplot(x=x_variable, y=y_variable, data=df)
+                plt.xlabel(x_variable)
+                plt.ylabel(y_variable)
+                plt.title('Box Plot')
+                plt.tight_layout()
+                plt.xticks(rotation=45)
+                st.pyplot()
+
+            elif selected_plot == 'pie':
+                st.subheader('Pie Chart')
+                variable = st.selectbox('Select variable', df.columns)
+                plt.figure(figsize = (25,15))
+                plt.pie(df[variable].value_counts(), labels=df[variable].unique())
+                plt.title('Pie Chart')
+                plt.tight_layout()
+                plt.xticks(rotation=45)
+                st.pyplot()
 
         # Add interactivity to the report
-        st.write('## Do you need to generate the report?')
+        st.subheader('Do you need to generate the report?')
 
         submit_button = st.button('Yes')
         
         if submit_button:
             # Display the profiling report using pandas_profiling
-            profile.to_widgets()
+            #profile.to_widgets()
             st_profile_report(profile)
 
-        st.write('## Export Report')
+        st.subheader('Export Report')
 
         # Export the profiling report as HTML
         export_button = st.button('Export Report as HTML')
 
         if export_button:
             profile.to_file("profiling_report.html")
-            st.success("Report exported successfully as HTML!", icon="✅")
+            st.success("Report exported successfully as HTML!, ", icon="✅")
             
             # Increment the download count
             increment_download_count()
@@ -154,4 +341,5 @@ def data_analysis_app() -> None:
     # Display the download count
     display_download_count(download_count)
 
-data_analysis_app()
+if __name__ == '__main__':
+    data_analysis_app()
