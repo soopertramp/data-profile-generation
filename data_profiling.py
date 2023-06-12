@@ -255,8 +255,8 @@ def upload_and_generate_report() -> None:
 
             # Check if x_variable is a date column
             if df[x_variable].dtype == 'datetime64[ns]':
-                df['Year'] = df[x_variable].dt.to_period('Y')
-                df_grouped = df.groupby('Year')[y_variable].mean()  # Aggregate by yearly mean
+                df['Month'] = df[x_variable].dt.to_period('M')
+                df_grouped = df.groupby('Month')[y_variable].mean()  # Aggregate by monthly mean
                 x_values = df_grouped.index.to_timestamp()  # Convert period index back to timestamp
                 y_values = df_grouped.values
             else:
@@ -323,8 +323,8 @@ def upload_and_generate_report() -> None:
 
             # Check if x_variable is a date column
             if df[x_variable].dtype == 'datetime64[ns]':
-                df['Year'] = df[x_variable].dt.to_period('Y')
-                df_grouped = df.groupby('Year')[y_variable].sum()  # Aggregate by yearly sum
+                df['Month'] = df[x_variable].dt.to_period('M')
+                df_grouped = df.groupby('Month')[y_variable].sum()  # Aggregate by monthly sum
                 x_values = df_grouped.index.to_timestamp()  # Convert period index back to timestamp
                 y_values = df_grouped.values
             else:
