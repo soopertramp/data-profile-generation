@@ -10,6 +10,7 @@ import seaborn as sns
 from streamlit_pandas_profiling import st_profile_report
 from ydata_profiling import ProfileReport
 
+
 import streamlit as st
 
 # Set page title and layout
@@ -244,7 +245,7 @@ def upload_and_generate_report() -> None:
         #if generate_plots:
         st.subheader('Plots')
         plot_types = ['scatter', 'line', 'bar', 'histogram', 'box', 'pie']
-        aggregation_levels = ['Yearly', 'Monthly']
+        aggregation_levels = ['Yearly', 'Monthly', 'Daily']
 
         # Select plot type
         selected_plot = st.selectbox('Select plot type', plot_types)
@@ -268,6 +269,11 @@ def upload_and_generate_report() -> None:
                     df['Month'] = df[x_variable].dt.to_period('M')
                     df_grouped = df.groupby('Month')[y_variable].mean()  # Aggregate by monthly mean
                     x_values = df_grouped.index.to_timestamp()  # Convert period index back to timestamp
+                    y_values = df_grouped.values
+                elif selected_aggregation == 'Daily':
+                    df['Date'] = df[x_variable].dt.date
+                    df_grouped = df.groupby('Date')[y_variable].mean()  # Aggregate by daily mean
+                    x_values = df_grouped.index
                     y_values = df_grouped.values
             else:
                 # Check if x_variable is a numerical column
@@ -294,6 +300,8 @@ def upload_and_generate_report() -> None:
                     plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
                 elif selected_aggregation == 'Monthly':
                     plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
+                elif selected_aggregation == 'Daily':
+                    plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
             st.pyplot()
 
         elif selected_plot == 'line':
@@ -309,6 +317,10 @@ def upload_and_generate_report() -> None:
                     y_values = df_grouped[y_variable].values
                 elif selected_aggregation == 'Monthly':
                     df_grouped = df.groupby(pd.Grouper(key=x_variable, freq='M')).mean()
+                    x_values = df_grouped.index
+                    y_values = df_grouped[y_variable].values
+                elif selected_aggregation == 'Daily':
+                    df_grouped = df.groupby(df[x_variable].dt.date).mean()  # Aggregate by daily mean
                     x_values = df_grouped.index
                     y_values = df_grouped[y_variable].values
             else:
@@ -335,6 +347,8 @@ def upload_and_generate_report() -> None:
                     plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
                 elif selected_aggregation == 'Monthly':
                     plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
+                elif selected_aggregation == 'Daily':
+                    plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
             st.pyplot()
 
         elif selected_plot == 'bar':
@@ -353,6 +367,11 @@ def upload_and_generate_report() -> None:
                     df['Month'] = df[x_variable].dt.to_period('M')
                     df_grouped = df.groupby('Month')[y_variable].sum()  # Aggregate by monthly sum
                     x_values = df_grouped.index.to_timestamp()  # Convert period index back to timestamp
+                    y_values = df_grouped.values
+                elif selected_aggregation == 'Daily':
+                    df['Date'] = df[x_variable].dt.date
+                    df_grouped = df.groupby('Date')[y_variable].sum()  # Aggregate by daily sum
+                    x_values = df_grouped.index
                     y_values = df_grouped.values
             else:
                 # Check if x_variable is a numerical column
@@ -378,6 +397,8 @@ def upload_and_generate_report() -> None:
                     plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
                 elif selected_aggregation == 'Monthly':
                     plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
+                elif selected_aggregation == 'Daily':
+                    plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
             st.pyplot()
 
         elif selected_plot == 'histogram':
