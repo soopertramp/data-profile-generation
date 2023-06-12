@@ -4,6 +4,7 @@
 import base64
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from streamlit_pandas_profiling import st_profile_report
@@ -29,7 +30,7 @@ def initialize_download_count() -> int:
         FileNotFoundError: If the file containing the download count does not exist.
 
     """
-    download_count = 100
+    download_count = 123
 
     # Read the download count from the file if it exists
     try:
@@ -83,6 +84,46 @@ def upload_and_generate_report() -> None:
         else:
             st.error("Invalid file format. Please upload a CSV or Excel file.")
             return
+        
+        st.subheader('Basic Investigation Of The Dataset Before Cleaning The Data')
+        
+        # Display the entire dataset
+        if st.button('Show Dataset'):
+            st.subheader('Your Dataset')
+            st.write(df)
+
+        # Display the top 5 rows of the dataset
+        if st.button('Show Top 5 Rows'):
+            st.subheader('Top 5 Rows')
+            st.write(df.head(5))
+
+        # Display the bottom 5 rows of the dataset
+        if st.button('Show Bottom 5 Rows'):
+            st.subheader('Bottom 5 Rows')
+            st.write(df.tail(5))
+
+        # Display the shape of the dataset
+        if st.button('Show Shape of the Dataset'):
+            st.subheader('Shape of the dataset')
+            st.write(f'The shape of your dataset is {df.shape[0]} rows and {df.shape[1]} columns')
+
+        # Display the types of columns
+        if st.button('Show Types of Columns'):
+            st.subheader('The types of your columns')
+            st.write(df.dtypes)
+
+        # Display missing values and duplicate values
+        if st.button('Show Missing Values and Duplicate Values'):
+            st.subheader('Missing Values and Duplicate Values In Your Dataset')
+            missing_values = df.isnull().sum()
+            missing_values_formatted = ', '.join(f"{column} - {count}" for column, count in missing_values.items())
+            st.write(f"The DataFrame contains missing values:\n\n{missing_values_formatted}\n")
+            st.write(f'The number of duplicated rows in your dataset is {df.duplicated().sum()}')
+
+        # Display descriptive statistics
+        if st.button('Show Descriptive Statistics'):
+            st.subheader('Descriptive Statistics of Your Dataset')
+            st.write(df.describe())
         
         # Ask the user for data cleaning inputs
         st.subheader('Data Cleaning Inputs')
@@ -147,35 +188,35 @@ def upload_and_generate_report() -> None:
                                 "url": "https://www.linkedin.com/in/pradeepchandra-reddy-s-c/"},
                                 html={"style": {"logo": logo_string}})
         
-        st.subheader('Basic Investigation Of The Dataset')
+        st.subheader('Basic Investigation Of The Dataset After Cleaning')
         
         # Display the entire dataset
-        if st.button('Show Dataset'):
+        if st.button('Show Dataset', key='show_dataset'):
             st.subheader('Your Dataset')
             st.write(df)
 
         # Display the top 5 rows of the dataset
-        if st.button('Show Top 5 Rows'):
+        if st.button('Show Top 5 Rows', key='show_top_rows'):
             st.subheader('Top 5 Rows')
             st.write(df.head(5))
 
         # Display the bottom 5 rows of the dataset
-        if st.button('Show Bottom 5 Rows'):
+        if st.button('Show Bottom 5 Rows', key='show_bottom_rows'):
             st.subheader('Bottom 5 Rows')
             st.write(df.tail(5))
 
         # Display the shape of the dataset
-        if st.button('Show Shape of the Dataset'):
+        if st.button('Show Shape of the Dataset', key='show_dataset_shape'):
             st.subheader('Shape of the dataset')
             st.write(f'The shape of your dataset is {df.shape[0]} rows and {df.shape[1]} columns')
 
         # Display the types of columns
-        if st.button('Show Types of Columns'):
+        if st.button('Show Types of Columns', key='show_dataset_columns'):
             st.subheader('The types of your columns')
             st.write(df.dtypes)
 
         # Display missing values and duplicate values
-        if st.button('Show Missing Values and Duplicate Values'):
+        if st.button('Show Missing Values and Duplicate Values', key='show_dataset_missing'):
             st.subheader('Missing Values and Duplicate Values In Your Dataset')
             missing_values = df.isnull().sum()
             missing_values_formatted = ', '.join(f"{column} - {count}" for column, count in missing_values.items())
@@ -183,94 +224,177 @@ def upload_and_generate_report() -> None:
             st.write(f'The number of duplicated rows in your dataset is {df.duplicated().sum()}')
 
         # Display descriptive statistics
-        if st.button('Show Descriptive Statistics'):
+        if st.button('Show Descriptive Statistics', key='show_dataset_statistics'):
             st.subheader('Descriptive Statistics of Your Dataset')
             st.write(df.describe())
+            
+        if st.button('Download Cleaned Dataset'):
+            # Convert DataFrame to CSV file
+            csv = df.to_csv(index=False)
+            
+            # Generate download link
+            b64 = base64.b64encode(csv.encode()).decode()
+            href = f'<a href="data:file/csv;base64,{b64}" download="cleaned_dataset.csv">Download CSV File</a>'
+            st.markdown(href, unsafe_allow_html=True)
         
         st.set_option('deprecation.showPyplotGlobalUse', False)
         
         # Create plots
-        generate_plots = st.button("Do You Want To Generate Plots")
-        if generate_plots:
-            st.subheader('Plots')
-            plot_types = ['scatter', 'line', 'bar', 'histogram', 'box', 'pie']
+        #generate_plots = st.button("Do You Want To Generate Plots")
+        #if generate_plots:
+        st.subheader('Plots')
+        plot_types = ['scatter', 'line', 'bar', 'histogram', 'box', 'pie']
 
             # Select plot type
-            selected_plot = st.selectbox('Select plot type', plot_types)
+        selected_plot = st.selectbox('Select plot type', plot_types)
 
-            if selected_plot == 'scatter':
-                st.subheader('Scatter Plot')
-                x_variable = st.selectbox('Select x-axis variable', df.columns)
-                y_variable = st.selectbox('Select y-axis variable', df.columns)
-                plt.figure(figsize = (8,6))
-                plt.scatter(df[x_variable], df[y_variable])
-                plt.xlabel(x_variable)
-                plt.ylabel(y_variable)
-                plt.title('Scatter Plot')
-                plt.tight_layout()
-                plt.xticks(rotation=45)
-                st.pyplot()
+        if selected_plot == 'scatter':
+            st.subheader('Scatter Plot')
+            x_variable = st.selectbox('Select x-axis variable', df.columns)
+            y_variable = st.selectbox('Select y-axis variable', df.columns)
 
-            elif selected_plot == 'line':
-                st.subheader('Line Plot')
-                x_variable = st.selectbox('Select x-axis variable', df.columns)
-                y_variable = st.selectbox('Select y-axis variable', df.columns)
-                plt.figure(figsize = (25,15))
-                plt.plot(df[x_variable], df[y_variable])
-                plt.xlabel(x_variable)
-                plt.ylabel(y_variable)
-                plt.title('Line Plot')
-                plt.tight_layout()
-                plt.xticks(rotation=45)
-                st.pyplot()
+            # Check if x_variable is a date column
+            if df[x_variable].dtype == 'datetime64[ns]':
+                df['Year'] = df[x_variable].dt.to_period('Y')
+                df_grouped = df.groupby('Year')[y_variable].mean()  # Aggregate by yearly mean
+                x_values = df_grouped.index.to_timestamp()  # Convert period index back to timestamp
+                y_values = df_grouped.values
+            else:
+                # Check if x_variable is a numerical column
+                if np.issubdtype(df[x_variable].dtype, np.number):
+                    bin_values = np.histogram(df[x_variable], bins='auto')[1]
+                    x_values = pd.cut(df[x_variable], bins=bin_values, labels=False)
+                    y_values = df[y_variable]
+                else:
+                    # Assign numerical values to categories
+                    categories = df[x_variable].unique()
+                    category_dict = {category: i for i, category in enumerate(categories)}
+                    x_values = df[x_variable].map(category_dict)
+                    y_values = df[y_variable]
 
-            elif selected_plot == 'bar':
-                st.subheader('Bar Plot')
-                x_variable = st.selectbox('Select x-axis variable', df.columns)
-                y_variable = st.selectbox('Select y-axis variable', df.columns)
-                plt.figure(figsize = (25,15))
-                plt.bar(df[x_variable], df[y_variable])
-                plt.xlabel(x_variable)
-                plt.ylabel(y_variable)
-                plt.title('Bar Plot')
-                plt.tight_layout()
-                plt.xticks(rotation=45)
-                st.pyplot()
+            plt.figure(figsize=(8, 6))
+            plt.scatter(x_values, y_values)
+            plt.xlabel(x_variable)
+            plt.ylabel(y_variable)
+            plt.title('Scatter Plot')
+            plt.tight_layout()
+            plt.xticks(rotation=45)
+            if df[x_variable].dtype == 'datetime64[ns]':
+                plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
+            st.pyplot()
 
-            elif selected_plot == 'histogram':
-                st.subheader('Histogram')
-                x_variable = st.selectbox('Select variable', df.columns)
-                plt.figure(figsize = (25,15))
-                plt.hist(df[x_variable])
-                plt.xlabel(x_variable)
+        elif selected_plot == 'line':
+            st.subheader('Line Plot')
+            x_variable = st.selectbox('Select x-axis variable', df.columns)
+            y_variable = st.selectbox('Select y-axis variable', df.columns)
+
+            # Check if x_variable is a date column
+            if df[x_variable].dtype == 'datetime64[ns]':
+                df_grouped = df.groupby(pd.Grouper(key=x_variable, freq='M')).mean()
+                x_values = df_grouped.index
+                y_values = df_grouped[y_variable].values
+            else:
+                # Check if x_variable is a numerical column
+                if np.issubdtype(df[x_variable].dtype, np.number):
+                    x_values = df[x_variable]
+                    y_values = df[y_variable]
+                else:
+                    # Assign numerical values to categories
+                    categories = df[x_variable].unique()
+                    category_dict = {category: i for i, category in enumerate(categories)}
+                    x_values = df[x_variable].map(category_dict)
+                    y_values = df[y_variable]
+
+            plt.figure(figsize=(12, 6))
+            plt.plot(x_values, y_values)
+            plt.xlabel(x_variable)
+            plt.ylabel(y_variable)
+            plt.title('Line Plot')
+            plt.tight_layout()
+            plt.xticks(rotation=45)
+            if df[x_variable].dtype == 'datetime64[ns]':
+                plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
+            st.pyplot()
+
+        elif selected_plot == 'bar':
+            st.subheader('Bar Plot')
+            x_variable = st.selectbox('Select x-axis variable', df.columns)
+            y_variable = st.selectbox('Select y-axis variable', df.columns)
+
+            # Check if x_variable is a date column
+            if df[x_variable].dtype == 'datetime64[ns]':
+                df['Year'] = df[x_variable].dt.to_period('Y')
+                df_grouped = df.groupby('Year')[y_variable].sum()  # Aggregate by yearly sum
+                x_values = df_grouped.index.to_timestamp()  # Convert period index back to timestamp
+                y_values = df_grouped.values
+            else:
+                # Check if x_variable is a numerical column
+                if np.issubdtype(df[x_variable].dtype, np.number):
+                    x_values = df[x_variable]
+                    y_values = df[y_variable]
+                else:
+                    # Assign numerical values to categories
+                    categories = df[x_variable].unique()
+                    category_dict = {category: i for i, category in enumerate(categories)}
+                    x_values = df[x_variable].map(category_dict)
+                    y_values = df[y_variable]
+
+            plt.figure(figsize=(8, 6))
+            plt.bar(x_values, y_values)
+            plt.xlabel(x_variable)
+            plt.ylabel(y_variable)
+            plt.title('Bar Plot')
+            plt.tight_layout()
+            plt.xticks(rotation=45)
+            if df[x_variable].dtype == 'datetime64[ns]':
+                plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
+            st.pyplot()
+
+        elif selected_plot == 'histogram':
+            st.subheader('Histogram')
+            variable = st.selectbox('Select variable', df.columns)
+
+            # Check if variable is a numerical column
+            if np.issubdtype(df[variable].dtype, np.number):
+                plt.figure(figsize=(8, 6))
+                plt.hist(df[variable], bins='auto')
+                plt.xlabel(variable)
                 plt.ylabel('Frequency')
                 plt.title('Histogram')
                 plt.tight_layout()
                 plt.xticks(rotation=45)
                 st.pyplot()
+            else:
+                st.write('Selected variable is not numerical.')
 
-            elif selected_plot == 'box':
-                st.subheader('Box Plot')
-                x_variable = st.selectbox('Select x-axis variable', df.columns)
-                y_variable = st.selectbox('Select y-axis variable', df.columns)
-                plt.figure(figsize = (25,15))
-                sns.boxplot(x=x_variable, y=y_variable, data=df)
-                plt.xlabel(x_variable)
-                plt.ylabel(y_variable)
-                plt.title('Box Plot')
-                plt.tight_layout()
-                plt.xticks(rotation=45)
-                st.pyplot()
+        elif selected_plot == 'box':
+            st.subheader('Box Plot')
+            x_variable = st.selectbox('Select x-axis variable', df.columns)
+            y_variable = st.selectbox('Select y-axis variable', df.columns)
 
-            elif selected_plot == 'pie':
-                st.subheader('Pie Chart')
-                variable = st.selectbox('Select variable', df.columns)
-                plt.figure(figsize = (25,15))
+            plt.figure(figsize=(8, 6))
+            sns.boxplot(x=x_variable, y=y_variable, data=df)
+            plt.xlabel(x_variable)
+            plt.ylabel(y_variable)
+            plt.title('Box Plot')
+            plt.tight_layout()
+            plt.xticks(rotation=45)
+            st.pyplot()
+
+        elif selected_plot == 'pie':
+            st.subheader('Pie Chart')
+            variable = st.selectbox('Select variable', df.columns)
+
+            # Check if variable is a categorical column
+            if df[variable].dtype == 'object':
+                plt.figure(figsize=(8, 6))
                 plt.pie(df[variable].value_counts(), labels=df[variable].unique())
                 plt.title('Pie Chart')
                 plt.tight_layout()
                 plt.xticks(rotation=45)
                 st.pyplot()
+            else:
+                st.write('Selected variable is not categorical.')
 
         # Add interactivity to the report
         st.subheader('Do you need to generate the report?')
@@ -279,7 +403,6 @@ def upload_and_generate_report() -> None:
         
         if submit_button:
             # Display the profiling report using pandas_profiling
-            #profile.to_widgets()
             st_profile_report(profile)
 
         st.subheader('Export Report')
