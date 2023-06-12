@@ -244,9 +244,13 @@ def upload_and_generate_report() -> None:
         #if generate_plots:
         st.subheader('Plots')
         plot_types = ['scatter', 'line', 'bar', 'histogram', 'box', 'pie']
+        aggregation_levels = ['Yearly', 'Monthly']
 
-            # Select plot type
+        # Select plot type
         selected_plot = st.selectbox('Select plot type', plot_types)
+
+        # Select aggregation level
+        selected_aggregation = st.selectbox('Select aggregation level', aggregation_levels)
 
         if selected_plot == 'scatter':
             st.subheader('Scatter Plot')
@@ -255,10 +259,16 @@ def upload_and_generate_report() -> None:
 
             # Check if x_variable is a date column
             if df[x_variable].dtype == 'datetime64[ns]':
-                df['Month'] = df[x_variable].dt.to_period('M')
-                df_grouped = df.groupby('Month')[y_variable].mean()  # Aggregate by monthly mean
-                x_values = df_grouped.index.to_timestamp()  # Convert period index back to timestamp
-                y_values = df_grouped.values
+                if selected_aggregation == 'Yearly':
+                    df['Year'] = df[x_variable].dt.year
+                    df_grouped = df.groupby('Year')[y_variable].mean()  # Aggregate by yearly mean
+                    x_values = df_grouped.index
+                    y_values = df_grouped.values
+                elif selected_aggregation == 'Monthly':
+                    df['Month'] = df[x_variable].dt.to_period('M')
+                    df_grouped = df.groupby('Month')[y_variable].mean()  # Aggregate by monthly mean
+                    x_values = df_grouped.index.to_timestamp()  # Convert period index back to timestamp
+                    y_values = df_grouped.values
             else:
                 # Check if x_variable is a numerical column
                 if np.issubdtype(df[x_variable].dtype, np.number):
@@ -280,7 +290,10 @@ def upload_and_generate_report() -> None:
             plt.tight_layout()
             plt.xticks(rotation=45)
             if df[x_variable].dtype == 'datetime64[ns]':
-                plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
+                if selected_aggregation == 'Yearly':
+                    plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
+                elif selected_aggregation == 'Monthly':
+                    plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
             st.pyplot()
 
         elif selected_plot == 'line':
@@ -290,9 +303,14 @@ def upload_and_generate_report() -> None:
 
             # Check if x_variable is a date column
             if df[x_variable].dtype == 'datetime64[ns]':
-                df_grouped = df.groupby(pd.Grouper(key=x_variable, freq='M')).mean()
-                x_values = df_grouped.index
-                y_values = df_grouped[y_variable].values
+                if selected_aggregation == 'Yearly':
+                    df_grouped = df.groupby(df[x_variable].dt.year).mean()
+                    x_values = df_grouped.index
+                    y_values = df_grouped[y_variable].values
+                elif selected_aggregation == 'Monthly':
+                    df_grouped = df.groupby(pd.Grouper(key=x_variable, freq='M')).mean()
+                    x_values = df_grouped.index
+                    y_values = df_grouped[y_variable].values
             else:
                 # Check if x_variable is a numerical column
                 if np.issubdtype(df[x_variable].dtype, np.number):
@@ -313,7 +331,10 @@ def upload_and_generate_report() -> None:
             plt.tight_layout()
             plt.xticks(rotation=45)
             if df[x_variable].dtype == 'datetime64[ns]':
-                plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
+                if selected_aggregation == 'Yearly':
+                    plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
+                elif selected_aggregation == 'Monthly':
+                    plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
             st.pyplot()
 
         elif selected_plot == 'bar':
@@ -323,10 +344,16 @@ def upload_and_generate_report() -> None:
 
             # Check if x_variable is a date column
             if df[x_variable].dtype == 'datetime64[ns]':
-                df['Month'] = df[x_variable].dt.to_period('M')
-                df_grouped = df.groupby('Month')[y_variable].sum()  # Aggregate by monthly sum
-                x_values = df_grouped.index.to_timestamp()  # Convert period index back to timestamp
-                y_values = df_grouped.values
+                if selected_aggregation == 'Yearly':
+                    df['Year'] = df[x_variable].dt.year
+                    df_grouped = df.groupby('Year')[y_variable].sum()  # Aggregate by yearly sum
+                    x_values = df_grouped.index
+                    y_values = df_grouped.values
+                elif selected_aggregation == 'Monthly':
+                    df['Month'] = df[x_variable].dt.to_period('M')
+                    df_grouped = df.groupby('Month')[y_variable].sum()  # Aggregate by monthly sum
+                    x_values = df_grouped.index.to_timestamp()  # Convert period index back to timestamp
+                    y_values = df_grouped.values
             else:
                 # Check if x_variable is a numerical column
                 if np.issubdtype(df[x_variable].dtype, np.number):
@@ -347,7 +374,10 @@ def upload_and_generate_report() -> None:
             plt.tight_layout()
             plt.xticks(rotation=45)
             if df[x_variable].dtype == 'datetime64[ns]':
-                plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
+                if selected_aggregation == 'Yearly':
+                    plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
+                elif selected_aggregation == 'Monthly':
+                    plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
             st.pyplot()
 
         elif selected_plot == 'histogram':
