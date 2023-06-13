@@ -9,6 +9,7 @@ import pandas as pd
 import seaborn as sns
 from streamlit_pandas_profiling import st_profile_report
 from ydata_profiling import ProfileReport
+from sklearn.impute import SimpleImputer, KNNImputer
 
 
 import streamlit as st
@@ -31,7 +32,7 @@ def initialize_download_count() -> int:
         FileNotFoundError: If the file containing the download count does not exist.
 
     """
-    download_count = 123
+    download_count = 129
 
     # Read the download count from the file if it exists
     try:
@@ -77,11 +78,19 @@ def upload_and_generate_report() -> None:
     uploaded_file = st.file_uploader("### Upload a file", type=["csv", "xlsx"])
 
     if uploaded_file is not None:
-        # Read the uploaded file as a pandas DataFrame
+    # Read the uploaded file as a pandas DataFrame
         if uploaded_file.name.endswith('.csv'):
             df = pd.read_csv(uploaded_file)
         elif uploaded_file.name.endswith(('.xls', '.xlsx')):
-            df = pd.read_excel(uploaded_file)
+            # Get the available sheets in the Excel file
+            excel_sheets = pd.read_excel(uploaded_file, sheet_name=None)
+            
+            # Display the sheet names and let the user choose one
+            sheet_names = list(excel_sheets.keys())
+            selected_sheet = st.selectbox("Select sheet", sheet_names)
+            
+            # Read the selected sheet as a DataFrame
+            df = pd.read_excel(uploaded_file, sheet_name=selected_sheet)
         else:
             st.error("Invalid file format. Please upload a CSV or Excel file.")
             return
@@ -127,56 +136,189 @@ def upload_and_generate_report() -> None:
             st.write(df.describe())
         
         # Ask the user for data cleaning inputs
-        st.subheader('Data Cleaning Inputs')
-
-        # Example: Remove missing values
-        remove_missing_values = st.checkbox('Remove missing values')
-        if remove_missing_values:
-            df = df.dropna()
-
-        # Example: Convert string columns to lowercase
-        lowercase_columns = st.multiselect('Columns to convert to lowercase', df.select_dtypes(include=['object']).columns)
-        for column in lowercase_columns:
-            df[column] = df[column].str.lower()
-
-        # Example: Remove duplicates
-        remove_duplicates = st.checkbox('Remove duplicates')
-        if remove_duplicates:
-            df = df.drop_duplicates()
+        st.header('Data Cleaning Inputs')
+        
+        st.subheader('DateTime Conversion')    
 
         # Example: Convert date columns to datetime
         date_columns = st.multiselect('Columns to convert to datetime', df.select_dtypes(include=['object']).columns)
         for column in date_columns:
             df[column] = pd.to_datetime(df[column])
+        
+        st.subheader('Missing Values')
 
+        # Example: Remove missing values
+        missing_values_action = st.selectbox('Missing Values Action', ['Do Nothing','Dropna', 'Fillna', 'Replace', 'Simple Imputer', 'KNN Imputer'])
+
+        if missing_values_action == 'Do Nothing':
+            # Do nothing, no action taken on missing values
+            pass
+        elif missing_values_action == 'Dropna':
+            df = df.dropna()
+        elif missing_values_action == 'Fillna':
+            # Ask the user for the fill value
+            fill_value = st.text_input('Enter the fill value', '')
+
+            # Validate the fill value
+            if fill_value and fill_value.strip():  # Check if the fill value is not empty or whitespace
+                try:
+                    fill_value = float(fill_value)  # Attempt to convert the fill value to float
+                except ValueError:
+                    st.error("Invalid fill value. Please provide a numeric value.")
+                    st.stop()  # Stop execution and display the error message
+
+                # Iterate over the numerical columns and fill missing values with the fill value
+                num_columns = df.select_dtypes(include=['number', 'float']).columns
+                for column in num_columns:
+                    df[column] = df[column].fillna(fill_value)        
+            else:
+                st.error("Invalid fill value. Please provide a non-empty value.")
+                st.stop()  # Stop execution and display the error message
+        elif missing_values_action == 'Replace':
+            # Ask the user for the replacement values
+            column_names = df.columns
+            replacements = {}
+            for column in column_names:
+                replacement_value = st.text_input(f'Enter the replacement value for {column}', '')
+                replacements[column] = replacement_value
+            df = df.replace(replacements)
+        elif missing_values_action == 'Simple Imputer':
+            # Ask the user for the imputation strategy
+            imputation_strategy = st.selectbox('Imputation Strategy', ['mean', 'median', 'most_frequent'])
+            
+            # Separate numeric and categorical columns
+            numeric_columns = df.select_dtypes(include='number').columns
+            categorical_columns = df.select_dtypes(exclude='number').columns
+
+            # Impute numeric columns
+            if len(numeric_columns) > 0:
+                st.write('Numeric Columns')
+                selected_numeric_columns = st.multiselect('Select numeric columns for imputation', list(numeric_columns))
+                if len(selected_numeric_columns) > 0:
+                    numeric_imputer = SimpleImputer(strategy=imputation_strategy)
+                    df[selected_numeric_columns] = numeric_imputer.fit_transform(df[selected_numeric_columns])
+
+            # Impute categorical columns
+            if len(categorical_columns) > 0:
+                st.write('Categorical Columns')
+                selected_categorical_columns = st.multiselect('Select categorical columns for imputation', list(categorical_columns))
+                if len(selected_categorical_columns) > 0:
+                    categorical_imputer = SimpleImputer(strategy='most_frequent')
+                    df[selected_categorical_columns] = categorical_imputer.fit_transform(df[selected_categorical_columns])
+
+        elif missing_values_action == 'KNN Imputer':
+            # Ask the user for the number of neighbors
+            n_neighbors = st.number_input('Number of Neighbors', min_value=1, step=1)
+            
+            # Separate numeric and categorical columns
+            numeric_columns = df.select_dtypes(include='number').columns
+            categorical_columns = df.select_dtypes(exclude='number').columns
+            
+            # Impute numeric columns
+            if len(numeric_columns) > 0:
+                st.subheader('Numeric Columns')
+                selected_numeric_columns = st.multiselect('Select numeric columns for imputation', list(numeric_columns))
+                if len(selected_numeric_columns) > 0:
+                    numeric_imputer = KNNImputer(n_neighbors=n_neighbors)
+                    df[selected_numeric_columns] = numeric_imputer.fit_transform(df[selected_numeric_columns])
+
+            # Impute categorical columns
+            if len(categorical_columns) > 0:
+                st.subheader('Categorical Columns')
+                selected_categorical_columns = st.multiselect('Select categorical columns for imputation', list(categorical_columns))
+                if len(selected_categorical_columns) > 0:
+                    # You may choose a different imputation strategy for categorical columns
+                    categorical_imputer = SimpleImputer(strategy='most_frequent')
+                    df[selected_categorical_columns] = categorical_imputer.fit_transform(df[selected_categorical_columns])
+
+        st.subheader('Remove Duplicates')
+        
+        # Example: Remove duplicates
+        remove_duplicates = st.checkbox('Remove duplicates')
+        if remove_duplicates:
+            df = df.drop_duplicates()
+
+        st.subheader('Outliers Treatment')
+        
         # Example: Remove outliers
-        remove_outliers = st.checkbox('Remove outliers')
-        if remove_outliers:
-            num_columns = df.select_dtypes(include=['number']).columns
-            for column in num_columns:
-                q1 = df[column].quantile(0.25)
-                q3 = df[column].quantile(0.75)
-                iqr = q3 - q1
-                lower_bound = q1 - 1.5 * iqr
-                upper_bound = q3 + 1.5 * iqr
-                df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
+        remove_outliers = st.selectbox('Remove outliers', ['Box Plot', 'Standard Deviation', 'Z Score'])
 
-        # Example: Standardize numerical columns
-        standardize_columns = st.multiselect('Numerical columns to standardize', df.select_dtypes(include=['number']).columns)
-        for column in standardize_columns:
-            df[column] = (df[column] - df[column].mean()) / df[column].std()
+        num_columns = df.select_dtypes(include=['number']).columns
 
+        if len(num_columns) > 0:
+            if remove_outliers == 'Box Plot':
+                # Perform outlier removal using the Box Plot approach
+                for column in num_columns:
+                    q1 = df[column].quantile(0.25)
+                    q3 = df[column].quantile(0.75)
+                    iqr = q3 - q1
+                    lower_bound = q1 - 1.5 * iqr
+                    upper_bound = q3 + 1.5 * iqr
+                    df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
+
+            elif remove_outliers == 'Standard Deviation':
+                # Ask the user for the number of standard deviations
+                num_std_devs = st.number_input('Number of Standard Deviations', value=0.0, min_value=0.0, max_value=None, step=0.1)
+
+                # Perform outlier removal using the Standard Deviation approach
+                for column in num_columns:
+                    mean = df[column].mean()
+                    std = df[column].std()
+                    lower_bound = mean - num_std_devs * std
+                    upper_bound = mean + num_std_devs * std
+                    df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
+
+            elif remove_outliers == 'Z Score':
+                # Ask the user for the threshold value
+                threshold = st.number_input('Z Score Threshold', value=0.0, min_value=0.0, step=0.1)
+
+                # Perform outlier removal using the Z Score approach
+                for column in num_columns:
+                    z_scores = (df[column] - df[column].mean()) / df[column].std()
+                    df = df[abs(z_scores) <= threshold]
+        else:
+            st.write('No numerical columns found in the DataFrame.') 
+
+        st.subheader('One Hot Encoding')
+        
         # Example: One-hot encode categorical columns
         categorical_columns = st.multiselect('Categorical columns to one-hot encode', df.select_dtypes(include=['object']).columns)
-        df = pd.get_dummies(df, columns=categorical_columns)
+        df = pd.get_dummies(df, columns=categorical_columns)                       
+ 
+        st.subheader('Columns to Standardize or Normalize')
 
+        # Ask the user for the data transformation method
+        transformation_method = st.selectbox('Select Transformation Method', ['Standardize', 'Normalize'])
+
+        # Select numerical columns
+        numerical_columns = df.select_dtypes(include=['number']).columns
+
+        if transformation_method == 'Standardize':
+            # Select columns to standardize
+            standardize_columns = st.multiselect('Numerical columns to standardize', numerical_columns)
+            for column in standardize_columns:
+                df[column] = (df[column] - df[column].mean()) / df[column].std()
+
+        elif transformation_method == 'Normalize':
+            # Select columns to normalize
+            normalize_columns = st.multiselect('Numerical columns to normalize', numerical_columns)
+            for column in normalize_columns:
+                df[column] = (df[column] - df[column].min()) / (df[column].max() - df[column].min())   
+        
+        st.subheader('Convert to Lowercase')
+        
+        # Example: Convert string columns to lowercase
+        lowercase_columns = st.multiselect('Columns to convert to lowercase', df.select_dtypes(include=['object']).columns)
+        for column in lowercase_columns:
+            df[column] = df[column].str.lower()        
+
+        st.subheader('Boolean Columns to Binary')
+        
         # Example: Convert boolean columns to binary
         boolean_columns = st.multiselect('Boolean columns to convert to binary', df.select_dtypes(include=['bool']).columns)
         for column in boolean_columns:
             df[column] = df[column].astype(int)
-            
-        logo_string = 'https://github.com/soopertramp/data-analysis-app/blob/main/logo.png'    
-
+        
         # Generate the pandas profiling report
         profile = ProfileReport(df, 
                                 title="Profiling Report", 
@@ -186,8 +328,7 @@ def upload_and_generate_report() -> None:
                                 "description": "This app is created by - Pradeepchandra Reddy S C (a.k.a soopertramp07)",
                                 "copyright_holder": "soopertramp07",
                                 "copyright_year": "2023",
-                                "url": "https://www.linkedin.com/in/pradeepchandra-reddy-s-c/"},
-                                html={"style": {"logo": logo_string}})
+                                "url": "https://www.linkedin.com/in/pradeepchandra-reddy-s-c/"})
         
         st.subheader('Basic Investigation Of The Dataset After Cleaning')
         
