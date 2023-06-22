@@ -1,10 +1,10 @@
 # Data Analysis App
 
-The Data Analysis App is a web application that allows users to upload a CSV file, generate a data profiling report, and download the report. It provides an interactive interface to explore and analyze data using the pandas-profiling library.
+The Data Analysis App is a web application that allows users to upload a CSV/Excel file, generate a data profiling report, and download the report. It provides an interactive interface to explore and analyze data using the pandas-profiling library.
 
 ## Features
 
-- ```Upload a CSV file```: Users can upload a CSV file containing their data to the app. The file uploader widget allows for easy selection and upload of the file.
+- ```Upload a CSV/Excel file```: Users can upload a CSV/Excel file containing their data to the app. The file uploader widget allows for easy selection and upload of the file.
 
 - ```Generate a Data Profiling Report```: The app generates a data profiling report for the uploaded CSV file using the pandas-profiling library. This report provides comprehensive insights into the data, including summary statistics, data types, missing values, correlations, and more.
 
