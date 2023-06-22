@@ -3,19 +3,14 @@
 # Importing Necessary Libraries
 import base64
 
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import seaborn as sns
 from streamlit_pandas_profiling import st_profile_report
 from ydata_profiling import ProfileReport
-from sklearn.impute import SimpleImputer, KNNImputer
-
 
 import streamlit as st
 
 # Set page title and layout
-st.set_page_config(page_title='Data Analysis App', layout='wide')
+st.set_page_config(page_title='Data Profiling App', layout='wide')
 
 # Initialize download count
 def initialize_download_count() -> int:
@@ -30,16 +25,15 @@ def initialize_download_count() -> int:
 
     Raises:
         FileNotFoundError: If the file containing the download count does not exist.
-
     """
-    download_count = 129
+    download_count = 132
 
     # Read the download count from the file if it exists
     try:
         with open("download_count.txt", "r") as file:
             download_count = int(file.read())
-    except FileNotFoundError:
-        pass
+    except FileNotFoundError as e:
+        raise e
 
     return download_count
 
@@ -48,14 +42,14 @@ def increment_download_count() -> None:
     """
     Increment the download count by 1 and store the updated count in a file.
 
-    This function increments the download count by 1, stores the updated count in a file called "download_count.txt".
+    This function increments the download count by 1 and stores the updated count in a file called "download_count.txt".
 
     Returns:
         None.
-
     """
     global download_count
     download_count += 1
+
     # Store the updated download count in the file
     with open("download_count.txt", "w") as file:
         file.write(str(download_count))
@@ -70,7 +64,6 @@ def upload_and_generate_report() -> None:
 
     Returns:
         None.
-
     """
     st.subheader('Upload a CSV or Excel file to generate a data profiling report.')
 
@@ -78,521 +71,40 @@ def upload_and_generate_report() -> None:
     uploaded_file = st.file_uploader("### Upload a file", type=["csv", "xlsx"])
 
     if uploaded_file is not None:
-    # Read the uploaded file as a pandas DataFrame
+        # Read the uploaded file as a pandas DataFrame
         if uploaded_file.name.endswith('.csv'):
             df = pd.read_csv(uploaded_file)
         elif uploaded_file.name.endswith(('.xls', '.xlsx')):
             # Get the available sheets in the Excel file
             excel_sheets = pd.read_excel(uploaded_file, sheet_name=None)
-            
+
             # Display the sheet names and let the user choose one
             sheet_names = list(excel_sheets.keys())
             selected_sheet = st.selectbox("Select sheet", sheet_names)
-            
+
             # Read the selected sheet as a DataFrame
             df = pd.read_excel(uploaded_file, sheet_name=selected_sheet)
         else:
             st.error("Invalid file format. Please upload a CSV or Excel file.")
             return
-        
-        st.subheader('Basic Investigation Of The Dataset Before Cleaning The Data')
-        
-        # Display the entire dataset
-        if st.button('Show Dataset'):
-            st.subheader('Your Dataset')
-            st.write(df)
 
-        # Display the top 5 rows of the dataset
-        if st.button('Show Top 5 Rows'):
-            st.subheader('Top 5 Rows')
-            st.write(df.head(5))
-
-        # Display the bottom 5 rows of the dataset
-        if st.button('Show Bottom 5 Rows'):
-            st.subheader('Bottom 5 Rows')
-            st.write(df.tail(5))
-
-        # Display the shape of the dataset
-        if st.button('Show Shape of the Dataset'):
-            st.subheader('Shape of the dataset')
-            st.write(f'The shape of your dataset is {df.shape[0]} rows and {df.shape[1]} columns')
-
-        # Display the types of columns
-        if st.button('Show Types of Columns'):
-            st.subheader('The types of your columns')
-            st.write(df.dtypes)
-
-        # Display missing values and duplicate values
-        if st.button('Show Missing Values and Duplicate Values'):
-            st.subheader('Missing Values and Duplicate Values In Your Dataset')
-            missing_values = df.isnull().sum()
-            missing_values_formatted = ', '.join(f"{column} - {count}" for column, count in missing_values.items())
-            st.write(f"The DataFrame contains missing values:\n\n{missing_values_formatted}\n")
-            st.write(f'The number of duplicated rows in your dataset is {df.duplicated().sum()}')
-
-        # Display descriptive statistics
-        if st.button('Show Descriptive Statistics'):
-            st.subheader('Descriptive Statistics of Your Dataset')
-            st.write(df.describe())
-        
-        # Ask the user for data cleaning inputs
-        st.header('Data Cleaning Inputs')
-        
-        st.subheader('DateTime Conversion')    
-
-        # Example: Convert date columns to datetime
-        date_columns = st.multiselect('Columns to convert to datetime', df.select_dtypes(include=['object']).columns)
-        for column in date_columns:
-            df[column] = pd.to_datetime(df[column])
-        
-        st.subheader('Missing Values')
-
-        # Example: Remove missing values
-        missing_values_action = st.selectbox('Missing Values Action', ['Do Nothing','Dropna', 'Fillna', 'Replace', 'Simple Imputer', 'KNN Imputer'])
-
-        if missing_values_action == 'Do Nothing':
-            # Do nothing, no action taken on missing values
-            pass
-        elif missing_values_action == 'Dropna':
-            df = df.dropna()
-        elif missing_values_action == 'Fillna':
-            # Ask the user for the fill value
-            fill_value = st.text_input('Enter the fill value', '')
-
-            # Validate the fill value
-            if fill_value and fill_value.strip():  # Check if the fill value is not empty or whitespace
-                try:
-                    fill_value = float(fill_value)  # Attempt to convert the fill value to float
-                except ValueError:
-                    st.error("Invalid fill value. Please provide a numeric value.")
-                    st.stop()  # Stop execution and display the error message
-
-                # Iterate over the numerical columns and fill missing values with the fill value
-                num_columns = df.select_dtypes(include=['number', 'float']).columns
-                for column in num_columns:
-                    df[column] = df[column].fillna(fill_value)        
-            else:
-                st.error("Invalid fill value. Please provide a non-empty value.")
-                st.stop()  # Stop execution and display the error message
-        elif missing_values_action == 'Replace':
-            # Ask the user for the replacement values
-            column_names = df.columns
-            replacements = {}
-            for column in column_names:
-                replacement_value = st.text_input(f'Enter the replacement value for {column}', '')
-                replacements[column] = replacement_value
-            df = df.replace(replacements)
-        elif missing_values_action == 'Simple Imputer':
-            # Ask the user for the imputation strategy
-            imputation_strategy = st.selectbox('Imputation Strategy', ['mean', 'median', 'most_frequent'])
-            
-            # Separate numeric and categorical columns
-            numeric_columns = df.select_dtypes(include='number').columns
-            categorical_columns = df.select_dtypes(exclude='number').columns
-
-            # Impute numeric columns
-            if len(numeric_columns) > 0:
-                st.write('Numeric Columns')
-                selected_numeric_columns = st.multiselect('Select numeric columns for imputation', list(numeric_columns))
-                if len(selected_numeric_columns) > 0:
-                    numeric_imputer = SimpleImputer(strategy=imputation_strategy)
-                    df[selected_numeric_columns] = numeric_imputer.fit_transform(df[selected_numeric_columns])
-
-            # Impute categorical columns
-            if len(categorical_columns) > 0:
-                st.write('Categorical Columns')
-                selected_categorical_columns = st.multiselect('Select categorical columns for imputation', list(categorical_columns))
-                if len(selected_categorical_columns) > 0:
-                    categorical_imputer = SimpleImputer(strategy='most_frequent')
-                    df[selected_categorical_columns] = categorical_imputer.fit_transform(df[selected_categorical_columns])
-
-        elif missing_values_action == 'KNN Imputer':
-            # Ask the user for the number of neighbors
-            n_neighbors = st.number_input('Number of Neighbors', min_value=1, step=1)
-            
-            # Separate numeric and categorical columns
-            numeric_columns = df.select_dtypes(include='number').columns
-            categorical_columns = df.select_dtypes(exclude='number').columns
-            
-            # Impute numeric columns
-            if len(numeric_columns) > 0:
-                st.subheader('Numeric Columns')
-                selected_numeric_columns = st.multiselect('Select numeric columns for imputation', list(numeric_columns))
-                if len(selected_numeric_columns) > 0:
-                    numeric_imputer = KNNImputer(n_neighbors=n_neighbors)
-                    df[selected_numeric_columns] = numeric_imputer.fit_transform(df[selected_numeric_columns])
-
-            # Impute categorical columns
-            if len(categorical_columns) > 0:
-                st.subheader('Categorical Columns')
-                selected_categorical_columns = st.multiselect('Select categorical columns for imputation', list(categorical_columns))
-                if len(selected_categorical_columns) > 0:
-                    # You may choose a different imputation strategy for categorical columns
-                    categorical_imputer = SimpleImputer(strategy='most_frequent')
-                    df[selected_categorical_columns] = categorical_imputer.fit_transform(df[selected_categorical_columns])
-
-        st.subheader('Remove Duplicates')
-        
-        # Example: Remove duplicates
-        remove_duplicates = st.checkbox('Remove duplicates')
-        if remove_duplicates:
-            df = df.drop_duplicates()
-
-        st.subheader('Outliers Treatment')
-        
-        # Example: Remove outliers
-        remove_outliers = st.selectbox('Remove outliers', ['Box Plot', 'Standard Deviation', 'Z Score'])
-
-        num_columns = df.select_dtypes(include=['number']).columns
-
-        if len(num_columns) > 0:
-            if remove_outliers == 'Box Plot':
-                # Perform outlier removal using the Box Plot approach
-                for column in num_columns:
-                    q1 = df[column].quantile(0.25)
-                    q3 = df[column].quantile(0.75)
-                    iqr = q3 - q1
-                    lower_bound = q1 - 1.5 * iqr
-                    upper_bound = q3 + 1.5 * iqr
-                    df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
-
-            elif remove_outliers == 'Standard Deviation':
-                # Ask the user for the number of standard deviations
-                num_std_devs = st.number_input('Number of Standard Deviations', value=0.0, min_value=0.0, max_value=None, step=0.1)
-
-                # Perform outlier removal using the Standard Deviation approach
-                for column in num_columns:
-                    mean = df[column].mean()
-                    std = df[column].std()
-                    lower_bound = mean - num_std_devs * std
-                    upper_bound = mean + num_std_devs * std
-                    df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
-
-            elif remove_outliers == 'Z Score':
-                # Ask the user for the threshold value
-                threshold = st.number_input('Z Score Threshold', value=0.0, min_value=0.0, step=0.1)
-
-                # Perform outlier removal using the Z Score approach
-                for column in num_columns:
-                    z_scores = (df[column] - df[column].mean()) / df[column].std()
-                    df = df[abs(z_scores) <= threshold]
-        else:
-            st.write('No numerical columns found in the DataFrame.') 
-
-        st.subheader('One Hot Encoding')
-        
-        # Example: One-hot encode categorical columns
-        categorical_columns = st.multiselect('Categorical columns to one-hot encode', df.select_dtypes(include=['object']).columns)
-        df = pd.get_dummies(df, columns=categorical_columns)                       
- 
-        st.subheader('Columns to Standardize or Normalize')
-
-        # Ask the user for the data transformation method
-        transformation_method = st.selectbox('Select Transformation Method', ['Standardize', 'Normalize'])
-
-        # Select numerical columns
-        numerical_columns = df.select_dtypes(include=['number']).columns
-
-        if transformation_method == 'Standardize':
-            # Select columns to standardize
-            standardize_columns = st.multiselect('Numerical columns to standardize', numerical_columns)
-            for column in standardize_columns:
-                df[column] = (df[column] - df[column].mean()) / df[column].std()
-
-        elif transformation_method == 'Normalize':
-            # Select columns to normalize
-            normalize_columns = st.multiselect('Numerical columns to normalize', numerical_columns)
-            for column in normalize_columns:
-                df[column] = (df[column] - df[column].min()) / (df[column].max() - df[column].min())   
-        
-        st.subheader('Convert to Lowercase')
-        
-        # Example: Convert string columns to lowercase
-        lowercase_columns = st.multiselect('Columns to convert to lowercase', df.select_dtypes(include=['object']).columns)
-        for column in lowercase_columns:
-            df[column] = df[column].str.lower()        
-
-        st.subheader('Boolean Columns to Binary')
-        
-        # Example: Convert boolean columns to binary
-        boolean_columns = st.multiselect('Boolean columns to convert to binary', df.select_dtypes(include=['bool']).columns)
-        for column in boolean_columns:
-            df[column] = df[column].astype(int)
-        
         # Generate the pandas profiling report
-        profile = ProfileReport(df, 
-                                title="Profiling Report", 
-                                explorative = True, 
-                                dark_mode = True,
+        profile = ProfileReport(df,
+                                title="Profiling Report",
+                                explorative=True,
+                                dark_mode=True,
                                 dataset={
-                                "description": "This app is created by - Pradeepchandra Reddy S C (a.k.a soopertramp07)",
-                                "copyright_holder": "soopertramp07",
-                                "copyright_year": "2023",
-                                "url": "https://www.linkedin.com/in/pradeepchandra-reddy-s-c/"})
-        
-        st.subheader('Basic Investigation Of The Dataset After Cleaning')
-        
-        # Display the entire dataset
-        if st.button('Show Dataset', key='show_dataset'):
-            st.subheader('Your Dataset')
-            st.write(df)
-
-        # Display the top 5 rows of the dataset
-        if st.button('Show Top 5 Rows', key='show_top_rows'):
-            st.subheader('Top 5 Rows')
-            st.write(df.head(5))
-
-        # Display the bottom 5 rows of the dataset
-        if st.button('Show Bottom 5 Rows', key='show_bottom_rows'):
-            st.subheader('Bottom 5 Rows')
-            st.write(df.tail(5))
-
-        # Display the shape of the dataset
-        if st.button('Show Shape of the Dataset', key='show_dataset_shape'):
-            st.subheader('Shape of the dataset')
-            st.write(f'The shape of your dataset is {df.shape[0]} rows and {df.shape[1]} columns')
-
-        # Display the types of columns
-        if st.button('Show Types of Columns', key='show_dataset_columns'):
-            st.subheader('The types of your columns')
-            st.write(df.dtypes)
-
-        # Display missing values and duplicate values
-        if st.button('Show Missing Values and Duplicate Values', key='show_dataset_missing'):
-            st.subheader('Missing Values and Duplicate Values In Your Dataset')
-            missing_values = df.isnull().sum()
-            missing_values_formatted = ', '.join(f"{column} - {count}" for column, count in missing_values.items())
-            st.write(f"The DataFrame contains missing values:\n\n{missing_values_formatted}\n")
-            st.write(f'The number of duplicated rows in your dataset is {df.duplicated().sum()}')
-
-        # Display descriptive statistics
-        if st.button('Show Descriptive Statistics', key='show_dataset_statistics'):
-            st.subheader('Descriptive Statistics of Your Dataset')
-            st.write(df.describe())
-            
-        if st.button('Download Cleaned Dataset'):
-            # Convert DataFrame to CSV file
-            csv = df.to_csv(index=False)
-            
-            # Generate download link
-            b64 = base64.b64encode(csv.encode()).decode()
-            href = f'<a href="data:file/csv;base64,{b64}" download="cleaned_dataset.csv">Download CSV File</a>'
-            st.markdown(href, unsafe_allow_html=True)
-        
-        st.set_option('deprecation.showPyplotGlobalUse', False)
-        
-        # Create plots
-        #generate_plots = st.button("Do You Want To Generate Plots")
-        #if generate_plots:
-        st.subheader('Plots')
-        plot_types = ['scatter', 'line', 'bar', 'histogram', 'box', 'pie']
-        aggregation_levels = ['Yearly', 'Monthly', 'Daily']
-
-        # Select plot type
-        selected_plot = st.selectbox('Select plot type', plot_types)
-
-        # Select aggregation level
-        selected_aggregation = st.selectbox('Select aggregation level', aggregation_levels)
-
-        if selected_plot == 'scatter':
-            st.subheader('Scatter Plot')
-            x_variable = st.selectbox('Select x-axis variable', df.columns)
-            y_variable = st.selectbox('Select y-axis variable', df.columns)
-
-            # Check if x_variable is a date column
-            if df[x_variable].dtype == 'datetime64[ns]':
-                if selected_aggregation == 'Yearly':
-                    df['Year'] = df[x_variable].dt.year
-                    df_grouped = df.groupby('Year')[y_variable].mean()  # Aggregate by yearly mean
-                    x_values = df_grouped.index
-                    y_values = df_grouped.values
-                elif selected_aggregation == 'Monthly':
-                    df['Month'] = df[x_variable].dt.to_period('M')
-                    df_grouped = df.groupby('Month')[y_variable].mean()  # Aggregate by monthly mean
-                    x_values = df_grouped.index.to_timestamp()  # Convert period index back to timestamp
-                    y_values = df_grouped.values
-                elif selected_aggregation == 'Daily':
-                    df['Date'] = df[x_variable].dt.date
-                    df_grouped = df.groupby('Date')[y_variable].mean()  # Aggregate by daily mean
-                    x_values = df_grouped.index
-                    y_values = df_grouped.values
-            else:
-                # Check if x_variable is a numerical column
-                if np.issubdtype(df[x_variable].dtype, np.number):
-                    bin_values = np.histogram(df[x_variable], bins='auto')[1]
-                    x_values = pd.cut(df[x_variable], bins=bin_values, labels=False)
-                    y_values = df[y_variable]
-                else:
-                    # Assign numerical values to categories
-                    categories = df[x_variable].unique()
-                    category_dict = {category: i for i, category in enumerate(categories)}
-                    x_values = df[x_variable].map(category_dict)
-                    y_values = df[y_variable]
-
-            plt.figure(figsize=(8, 6))
-            plt.scatter(x_values, y_values)
-            plt.xlabel(x_variable)
-            plt.ylabel(y_variable)
-            plt.title('Scatter Plot')
-            plt.tight_layout()
-            plt.xticks(rotation=45)
-            if df[x_variable].dtype == 'datetime64[ns]':
-                if selected_aggregation == 'Yearly':
-                    plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
-                elif selected_aggregation == 'Monthly':
-                    plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
-                elif selected_aggregation == 'Daily':
-                    plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
-            st.pyplot()
-
-        elif selected_plot == 'line':
-            st.subheader('Line Plot')
-            x_variable = st.selectbox('Select x-axis variable', df.columns)
-            y_variable = st.selectbox('Select y-axis variable', df.columns)
-
-            # Check if x_variable is a date column
-            if df[x_variable].dtype == 'datetime64[ns]':
-                if selected_aggregation == 'Yearly':
-                    df_grouped = df.groupby(df[x_variable].dt.year).mean()
-                    x_values = df_grouped.index
-                    y_values = df_grouped[y_variable].values
-                elif selected_aggregation == 'Monthly':
-                    df_grouped = df.groupby(pd.Grouper(key=x_variable, freq='M')).mean()
-                    x_values = df_grouped.index
-                    y_values = df_grouped[y_variable].values
-                elif selected_aggregation == 'Daily':
-                    df_grouped = df.groupby(df[x_variable].dt.date).mean()  # Aggregate by daily mean
-                    x_values = df_grouped.index
-                    y_values = df_grouped[y_variable].values
-            else:
-                # Check if x_variable is a numerical column
-                if np.issubdtype(df[x_variable].dtype, np.number):
-                    x_values = df[x_variable]
-                    y_values = df[y_variable]
-                else:
-                    # Assign numerical values to categories
-                    categories = df[x_variable].unique()
-                    category_dict = {category: i for i, category in enumerate(categories)}
-                    x_values = df[x_variable].map(category_dict)
-                    y_values = df[y_variable]
-
-            plt.figure(figsize=(12, 6))
-            plt.plot(x_values, y_values)
-            plt.xlabel(x_variable)
-            plt.ylabel(y_variable)
-            plt.title('Line Plot')
-            plt.tight_layout()
-            plt.xticks(rotation=45)
-            if df[x_variable].dtype == 'datetime64[ns]':
-                if selected_aggregation == 'Yearly':
-                    plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
-                elif selected_aggregation == 'Monthly':
-                    plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
-                elif selected_aggregation == 'Daily':
-                    plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
-            st.pyplot()
-
-        elif selected_plot == 'bar':
-            st.subheader('Bar Plot')
-            x_variable = st.selectbox('Select x-axis variable', df.columns)
-            y_variable = st.selectbox('Select y-axis variable', df.columns)
-
-            # Check if x_variable is a date column
-            if df[x_variable].dtype == 'datetime64[ns]':
-                if selected_aggregation == 'Yearly':
-                    df['Year'] = df[x_variable].dt.year
-                    df_grouped = df.groupby('Year')[y_variable].sum()  # Aggregate by yearly sum
-                    x_values = df_grouped.index
-                    y_values = df_grouped.values
-                elif selected_aggregation == 'Monthly':
-                    df['Month'] = df[x_variable].dt.to_period('M')
-                    df_grouped = df.groupby('Month')[y_variable].sum()  # Aggregate by monthly sum
-                    x_values = df_grouped.index.to_timestamp()  # Convert period index back to timestamp
-                    y_values = df_grouped.values
-                elif selected_aggregation == 'Daily':
-                    df['Date'] = df[x_variable].dt.date
-                    df_grouped = df.groupby('Date')[y_variable].sum()  # Aggregate by daily sum
-                    x_values = df_grouped.index
-                    y_values = df_grouped.values
-            else:
-                # Check if x_variable is a numerical column
-                if np.issubdtype(df[x_variable].dtype, np.number):
-                    x_values = df[x_variable]
-                    y_values = df[y_variable]
-                else:
-                    # Assign numerical values to categories
-                    categories = df[x_variable].unique()
-                    category_dict = {category: i for i, category in enumerate(categories)}
-                    x_values = df[x_variable].map(category_dict)
-                    y_values = df[y_variable]
-
-            plt.figure(figsize=(8, 6))
-            plt.bar(x_values, y_values)
-            plt.xlabel(x_variable)
-            plt.ylabel(y_variable)
-            plt.title('Bar Plot')
-            plt.tight_layout()
-            plt.xticks(rotation=45)
-            if df[x_variable].dtype == 'datetime64[ns]':
-                if selected_aggregation == 'Yearly':
-                    plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
-                elif selected_aggregation == 'Monthly':
-                    plt.xticks(x_values, x_values.strftime('%Y-%m'))  # Format x-axis ticks as desired
-                elif selected_aggregation == 'Daily':
-                    plt.xticks(x_values, x_values.astype(str))  # Format x-axis ticks as desired
-            st.pyplot()
-
-        elif selected_plot == 'histogram':
-            st.subheader('Histogram')
-            variable = st.selectbox('Select variable', df.columns)
-
-            # Check if variable is a numerical column
-            if np.issubdtype(df[variable].dtype, np.number):
-                plt.figure(figsize=(8, 6))
-                plt.hist(df[variable], bins='auto')
-                plt.xlabel(variable)
-                plt.ylabel('Frequency')
-                plt.title('Histogram')
-                plt.tight_layout()
-                plt.xticks(rotation=45)
-                st.pyplot()
-            else:
-                st.write('Selected variable is not numerical.')
-
-        elif selected_plot == 'box':
-            st.subheader('Box Plot')
-            x_variable = st.selectbox('Select x-axis variable', df.columns)
-            y_variable = st.selectbox('Select y-axis variable', df.columns)
-
-            plt.figure(figsize=(8, 6))
-            sns.boxplot(x=x_variable, y=y_variable, data=df)
-            plt.xlabel(x_variable)
-            plt.ylabel(y_variable)
-            plt.title('Box Plot')
-            plt.tight_layout()
-            plt.xticks(rotation=45)
-            st.pyplot()
-
-        elif selected_plot == 'pie':
-            st.subheader('Pie Chart')
-            variable = st.selectbox('Select variable', df.columns)
-
-            # Check if variable is a categorical column
-            if df[variable].dtype == 'object':
-                plt.figure(figsize=(8, 6))
-                plt.pie(df[variable].value_counts(), labels=df[variable].unique())
-                plt.title('Pie Chart')
-                plt.tight_layout()
-                plt.xticks(rotation=45)
-                st.pyplot()
-            else:
-                st.write('Selected variable is not categorical.')
+                                    "description": "This app is created by - Pradeepchandra Reddy S C (a.k.a soopertramp07)",
+                                    "copyright_holder": "soopertramp07",
+                                    "copyright_year": "2023",
+                                    "url": "https://www.linkedin.com/in/pradeepchandra-reddy-s-c/"
+                                })
 
         # Add interactivity to the report
         st.subheader('Do you need to generate the report?')
 
         submit_button = st.button('Yes')
-        
+
         if submit_button:
             # Display the profiling report using pandas_profiling
             st_profile_report(profile)
@@ -604,8 +116,8 @@ def upload_and_generate_report() -> None:
 
         if export_button:
             profile.to_file("profiling_report.html")
-            st.success("Report exported successfully as HTML!, ", icon="✅")
-            
+            st.success("Report exported successfully as HTML! ✅")
+
             # Increment the download count
             increment_download_count()
 
@@ -614,8 +126,8 @@ def upload_and_generate_report() -> None:
                 b64 = base64.b64encode(file.read()).decode()  # Encode the file content in base64
                 href = f'<a href="data:text/html;base64,{b64}" download="data_analysis_report.html">Download The Report</a>'
                 st.markdown(href, unsafe_allow_html=True)
-                st.write(":arrow_up: Click Above To Download The Report, Thank You!:pray:")
-
+                st.write(":arrow_up: Click Above To Download The Report, Thank You! :pray:")
+                
 # Display the download count
 def display_download_count(download_count: int) -> None:
     """
