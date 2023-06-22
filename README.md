@@ -77,7 +77,7 @@ The app will open in your default web browser, and you can begin using its featu
 
 ## Showcase
 
-[Check Out The Demo File](https://github.com/soopertramp/data-profile-generation/blob/main/IPL.html)
+[Check Out The Demo File](https://soopertramp.github.io/data-profile-generation/)
 
 ## Contributing
 Contributions to the Data Analysis App project are welcome! 
