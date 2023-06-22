@@ -55,7 +55,7 @@ To install and run the Data Analysis App locally, follow these steps:
 
 ## Usage
 
-### [Checkout the App](https://data-analysis.streamlit.app/)
+### [Checkout the App](https://data-profile-generation.streamlit.app/)
 
 To start the Data Analysis App, execute the following command:
 
