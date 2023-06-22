@@ -157,7 +157,7 @@ def data_analysis_app() -> None:
     """
     global download_count
 
-    st.title('Data Analysis App :chart_with_upwards_trend:')
+    st.title('Data Profile App :chart_with_upwards_trend:')
 
     # Initialize download count
     download_count = initialize_download_count()
