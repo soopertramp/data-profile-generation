@@ -1,4 +1,4 @@
-# Data Analysis App
+# Data Profile Generation App
 
 The Data Analysis App is a web application that allows users to upload a CSV/Excel file, generate a data profiling report, and download the report. It provides an interactive interface to explore and analyze data using the pandas-profiling library.
 
