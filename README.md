@@ -75,6 +75,10 @@ The app will open in your default web browser, and you can begin using its featu
 
 6. To download the exported report, click on the provided download link. The report will be downloaded to your local machine, allowing you to access it offline.
 
+## Showcase
+
+<iframe src="<https://github.com/soopertramp/data-profile-generation/blob/main/IPL.html>" width="100%" height="500px"></iframe>
+
 ## Contributing
 Contributions to the Data Analysis App project are welcome! 
 
