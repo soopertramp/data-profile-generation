@@ -1,5 +1,3 @@
-""" CLEAN CODE """
-
 # Importing Necessary Libraries
 import base64
 
